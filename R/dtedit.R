@@ -171,8 +171,9 @@ dtedit <- function(input, output, name, thedata, thedata2,
 		}
 	}
 
+thedata1 <- filter(!filter.col %in% filter.name)
+
 	output[[DataTableName]] <- DT::renderDataTable({
-		thedata1 <- filter(!filter.col %in% filter.name)
 	  thedata1[,view.cols]
 	}, options = datatable.options, server=TRUE, selection='single', rownames=FALSE)
 
