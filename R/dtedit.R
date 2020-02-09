@@ -82,7 +82,6 @@
 #'        See \link{https://rstudio.github.io/DT/options.html} for more information.
 #' @export
 dtedit <- function(input, output, name, thedata, thedata2,
-                   filter.col, filter.name,
                    view.cols2 = names(thedata2),
 				   view.cols = names(thedata),
 				   edit.cols = names(thedata),
@@ -170,8 +169,6 @@ dtedit <- function(input, output, name, thedata, thedata2,
 			thedata[,i] <- sapply(thedata[,i], FUN = function(x) { paste0(x, collapse = ', ') })
 		}
 	}
-
-thedata1 <- filter(!filter.col %in% filter.name)
 
 	output[[DataTableName]] <- DT::renderDataTable({
 	  thedata1[,view.cols]
