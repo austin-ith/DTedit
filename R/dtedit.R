@@ -81,7 +81,8 @@
 #' @param datatable.options options passed to \code{\link{DT::renderDataTable}}.
 #'        See \link{https://rstudio.github.io/DT/options.html} for more information.
 #' @export
-dtedit <- function(input, output, name, thedata,
+dtedit <- function(input, output, name, thedata, thedata2,
+                   view.cols2 = names(thedata2),
 				   view.cols = names(thedata),
 				   edit.cols = names(thedata),
 				   edit.label.cols = edit.cols,
@@ -390,7 +391,7 @@ dtedit <- function(input, output, name, thedata,
 	editModal <- function(row) {
 		output[[paste0(name, '_message')]] <- renderText('')
 		fields <- getFields('_edit_', values=result$thedata[row,])
-		shiny::modalDialog(title = title.edit,
+		shiny::modalDialog(title = title.edit,"Hello",
 			shiny::div(shiny::textOutput(paste0(name, '_message')), style='color:red'),
 			fields,
 			footer = column(shiny::modalButton('Cancel'),
