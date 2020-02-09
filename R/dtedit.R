@@ -82,6 +82,7 @@
 #'        See \link{https://rstudio.github.io/DT/options.html} for more information.
 #' @export
 dtedit <- function(input, output, name, thedata, thedata2,
+                   filter.col, filter.name,
                    view.cols2 = names(thedata2),
 				   view.cols = names(thedata),
 				   edit.cols = names(thedata),
@@ -171,7 +172,8 @@ dtedit <- function(input, output, name, thedata, thedata2,
 	}
 
 	output[[DataTableName]] <- DT::renderDataTable({
-		thedata[,view.cols]
+		thedata1 <- filter(!filter.col %in% filter.name)
+	  thedata1[,view.cols]
 	}, options = datatable.options, server=TRUE, selection='single', rownames=FALSE)
 
 	getFields <- function(typeName, values) {
