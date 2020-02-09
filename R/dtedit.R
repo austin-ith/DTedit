@@ -171,7 +171,7 @@ dtedit <- function(input, output, name, thedata, thedata2,
 	}
 
 	output[[DataTableName]] <- DT::renderDataTable({
-	  thedata1[,view.cols]
+	  thedata[,view.cols]
 	}, options = datatable.options, server=TRUE, selection='single', rownames=FALSE)
 
 	getFields <- function(typeName, values) {
