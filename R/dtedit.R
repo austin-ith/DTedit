@@ -376,7 +376,7 @@ dtedit <- function(input, output, name, thedata, thedata2,
 						result$thedata <- newdata
 					}
 					updateData(dt.proxy,
-								result$thedata[,view.cols],
+								result$thedata,
 								rownames = FALSE)
 					shiny::removeModal()
 					return(TRUE)
