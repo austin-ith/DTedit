@@ -358,7 +358,13 @@ dtedit <- function(input, output, name, thedata,
 		if(!is.null(row)) {
 			if(row > 0) {
 				newdata <- result$thedata
-				newdata[row,i] <- input[[paste0(name, '_edit_', i)]]
+				for(i in edit.cols) {
+					if(inputTypes[i] %in% c('selectInputMultiple')) {
+						newdata[[i]][row] <- list(input[[paste0(name, '_edit_', i)]])
+					} else {
+						newdata[row,i] <- input[[paste0(name, '_edit_', i)]]
+					}
+				}
 				tryCatch({
 					callback.data <- callback.update(data = newdata,
 													 olddata = result$thedata,
@@ -396,7 +402,7 @@ dtedit <- function(input, output, name, thedata,
 			shiny::div(shiny::textOutput(paste0(name, '_message')), style='color:red'),
 			shinyBS::bsCollapsePanel('_edit_', "January Estimate", "Estimated Shipment Count and Average weight(kg)",
 			                          shinyAddOns::inumericInput(inputId = "result$thedata[row,]$jan_est", label = "January Estimate: ",
-			                                                     value = 0)),
+			                                                     value = 0),server = T),
 			footer = column(shiny::modalButton('Cancel'),
 							shiny::actionButton(paste0(name, '_update'), 'Submit'),
 							width=12),
