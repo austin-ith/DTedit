@@ -402,12 +402,25 @@ dtedit <- function(input, output, name, thedata, thedata2,
 		                   strong("To: "), result$thedata[row,]$address,
 			shiny::div(shiny::textOutput(paste0(name, '_message')), style='color:red'),
 			shinyBS::bsCollapsePanel("January Estimate", "Estimated Shipment Count and Average weight(kg)",
-			                         HTML("<p style='text-align:left;'>"),
-			                         strong("Estimated Price per shipment: "),
-			                         HTML("<span style='float:right;'>"),
+			                         tags$head(
+			                           tags$style(type="text/css",
+			                                      "label.control-label, .selectize-control.single {
+			                                      display: table-cell;
+			                                      text-align: center;
+			                                      vertical-align: middle;
+			                                      }
+                                            label.control-label {
+                                            padding-right: 10px;
+                                            }
+                                            .form-group {
+                                            display: table-row;
+                                            }
+                                            .selectize-control.single div.item {
+                                            padding-right: 15px;
+                                            }")
+			                         ),
 			                          shiny::numericInput("result$thedata[row,]$jan_est", label = NULL,value = 0,
-			                                             width=numeric.width),
-			                         HTML("</span></p>")),
+			                                             width=numeric.width))
 			footer = column(shiny::modalButton('Cancel'),
 							shiny::actionButton(paste0(name, '_update'), 'Submit'),
 							width=12),
