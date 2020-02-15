@@ -83,7 +83,7 @@
 #' @export
 dtedit <- function(input, output, name, thedata, thedata2,
                    view.cols2 = names(thedata2),
-                   from,
+                   ship_from,
 				   view.cols = names(thedata),
 				   edit.cols = names(thedata),
 				   edit.label.cols = edit.cols,
@@ -393,9 +393,9 @@ dtedit <- function(input, output, name, thedata, thedata2,
 		output[[paste0(name, '_message')]] <- renderText('')
 		fields <- getFields('_edit_', values=result$thedata[row,])
 		shiny::modalDialog(title = title.edit,
-		                   paste(b("From: "), from),
+		                   paste(tags$b("From: "), ship_from),
 		                   HTML("<br>"),
-		                   paste(strong("To: "),result$thedata[row,]$address),
+		                   paste(tags$strong("To: "),result$thedata[row,]$address),
 			shiny::div(shiny::textOutput(paste0(name, '_message')), style='color:red'),
 			fields,
 			footer = column(shiny::modalButton('Cancel'),
