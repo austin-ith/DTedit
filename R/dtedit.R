@@ -393,8 +393,8 @@ dtedit <- function(input, output, name, thedata, thedata2,
 		output[[paste0(name, '_message')]] <- renderText('')
 		fields <- getFields('_edit_', values=result$thedata[row,])
 		shiny::modalDialog(title = title.edit,
-		                   HTML("<p style='text-align:center;'>"),
-		                   paste("Hello"),
+		                   paste("Lane: "), result$thedata[row,]$lane,
+		                   HTML("<p style='text-align:right;'>"), paste("Mode: "), result$thedata[row,]$mode,
 		                   HTML("</p>"),
 		                   strong("From: "), ship_from,
 		                   HTML("<br>"),
