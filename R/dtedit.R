@@ -358,13 +358,7 @@ dtedit <- function(input, output, name, thedata,
 		if(!is.null(row)) {
 			if(row > 0) {
 				newdata <- result$thedata
-				for(i in edit.cols) {
-					if(inputTypes[i] %in% c('selectInputMultiple')) {
-						newdata[[i]][row] <- list(input[[paste0(name, '_edit_', i)]])
-					} else {
-						newdata[row,i] <- input[[paste0(name, '_edit_', i)]]
-					}
-				}
+				newdata[row,i] <- input[[paste0(name, '_edit_', i)]]
 				tryCatch({
 					callback.data <- callback.update(data = newdata,
 													 olddata = result$thedata,
