@@ -391,7 +391,7 @@ dtedit <- function(input, output, name, thedata, thedata2,
 	editModal <- function(row) {
 		output[[paste0(name, '_message')]] <- renderText('')
 		fields <- getFields('_edit_', values=result$thedata[row,])
-		shiny::modalDialog(title = title.edit, result$thedata[row,]$address,
+		shiny::modalDialog(title = title.edit, paste("From: Lindon, Utah"),paste("To: ",result$thedata[row,]$address),
 			shiny::div(shiny::textOutput(paste0(name, '_message')), style='color:red'),
 			fields,
 			footer = column(shiny::modalButton('Cancel'),
