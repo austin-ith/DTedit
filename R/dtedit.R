@@ -402,25 +402,12 @@ dtedit <- function(input, output, name, thedata, thedata2,
 		                   strong("To: "), result$thedata[row,]$address,
 			shiny::div(shiny::textOutput(paste0(name, '_message')), style='color:red'),
 			shinyBS::bsCollapsePanel("January Estimate", "Estimated Shipment Count and Average weight(kg)",
-			                         tags$head(
-			                           tags$style(type="text/css",
-			                                      "label.control-label, .selectize-control.single {
-			                                      display: table-cell;
-			                                      text-align: center;
-			                                      vertical-align: middle;
-			                                      }
-                                            label.control-label {
-                                            padding-right: 10px;
-                                            }
-                                            .form-group {
-                                            display: table-row;
-                                            }
-                                            .selectize-control.single div.item {
-                                            padding-right: 15px;
-                                            }")
-			                         ),
-			                          shiny::numericInput("result$thedata[row,]$jan_est", label = "Hello",value = 0,
-			                                             width=numeric.width)),
+			                          shinyAddOns::inumericInput(result$thedata[row,]$jan_est, "January Estimate: ",
+			                                                     0, min = NA, max = NA,
+			                                                     step = NA, label.style = "float:left;padding:0.5em 1em 0.5em 0em;",
+			                                                     input.style = "width:75%;border-radius:4px;",
+			                                                     container.style = "margin-bottom:0px;",
+			                                                     container = list(outer = shiny::div, inner = shiny::span))),
 			footer = column(shiny::modalButton('Cancel'),
 							shiny::actionButton(paste0(name, '_update'), 'Submit'),
 							width=12),
