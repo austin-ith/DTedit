@@ -419,8 +419,8 @@ dtedit <- function(input, output, name, thedata, thedata2,
                                             padding-right: 15px;
                                             }")
 			                         ),
-			                          shiny::numericInput("result$thedata[row,]$jan_est", label = NULL,value = 0,
-			                                             width=numeric.width))
+			                          shiny::numericInput("result$thedata[row,]$jan_est", label = "Hello",value = 0,
+			                                             width=numeric.width)),
 			footer = column(shiny::modalButton('Cancel'),
 							shiny::actionButton(paste0(name, '_update'), 'Submit'),
 							width=12),
