@@ -394,7 +394,6 @@ dtedit <- function(input, output, name, thedata, thedata2,
 		fields <- getFields('_edit_', values=result$thedata[row,])
 		shiny::modalDialog(title = title.edit,
 		                   strong("From: "),
-		                         ship_from,
 		                   HTML("<br>"),
 		                   paste(tags$strong("To: ")),
 		                    result$thedata[row,]$address,
