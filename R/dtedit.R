@@ -81,8 +81,7 @@
 #' @param datatable.options options passed to \code{\link{DT::renderDataTable}}.
 #'        See \link{https://rstudio.github.io/DT/options.html} for more information.
 #' @export
-dtedit <- function(input, output, name, thedata, thedata2,
-                   view.cols2 = names(thedata2),
+dtedit <- function(input, output, name, thedata,
                    ship_from,
 				   view.cols = names(thedata),
 				   edit.cols = names(thedata),
@@ -376,7 +375,7 @@ dtedit <- function(input, output, name, thedata, thedata2,
 						result$thedata <- newdata
 					}
 					updateData(dt.proxy,
-								result$thedata,
+								result$thedata[,view.cols],
 								rownames = FALSE)
 					shiny::removeModal()
 					return(TRUE)
@@ -401,7 +400,7 @@ dtedit <- function(input, output, name, thedata, thedata2,
 		                   HTML("<br>"),
 		                   strong("To: "), result$thedata[row,]$address,
 			shiny::div(shiny::textOutput(paste0(name, '_message')), style='color:red'),
-			shinyBS::bsCollapsePanel("January Estimate", "Estimated Shipment Count and Average weight(kg)",
+			shinyBS::bsCollapsePanel('_edit_', "January Estimate", "Estimated Shipment Count and Average weight(kg)",
 			                          shinyAddOns::inumericInput(inputId = "result$thedata[row,]$jan_est", label = "January Estimate: ",
 			                                                     value = 0)),
 			footer = column(shiny::modalButton('Cancel'),
