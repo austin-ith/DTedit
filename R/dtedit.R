@@ -404,7 +404,7 @@ dtedit <- function(input, output, name, thedata,
 			shiny::div(tags$head(tags$style(type="text/css", "#inline label{ display: table-cell;
 			                           text-align: center; vertical-align: middle; }
                                   #inline .form-group { display: table-row;}"))),
-			if(is.na(result$thedata[row,]$jan_count)) {
+			if((result$thedata[row,]$jan_count) == 0) {
 			  HTML("<br>")
 			  } else {
 			  shinyBS::bsCollapsePanel("Quote January",
@@ -421,7 +421,7 @@ dtedit <- function(input, output, name, thedata,
 			                                                              label = "Approx. Transit Time (Days): ", value = 0)),
 			                         HTML("<br>"),
 			                         "Please include all Assessorials in total Quoted cost.")
-			   }, if(is.na(result$thedata[row,]$feb_count)) {
+			   }, if((result$thedata[row,]$feb_count) == 0) {
 			     HTML("<br>")
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote February",
@@ -438,7 +438,7 @@ dtedit <- function(input, output, name, thedata,
 			                                                                   label = "Approx. Transit Time (Days): ", value = 0)),
 			                              HTML("<br>"),
 			                              "Please include all Assessorials in total Quoted cost.")
-			   },if(is.na(result$thedata[row,]$mar_count)) {
+			   },if((result$thedata[row,]$mar_count == 0)) {
 			     HTML("<br>")
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote March",
@@ -455,7 +455,7 @@ dtedit <- function(input, output, name, thedata,
 			                                                                   label = "Approx. Transit Time (Days): ", value = 0)),
 			                              HTML("<br>"),
 			                              "Please include all Assessorials in total Quoted cost.")
-			   },if(is.na(result$thedata[row,]$apr_count)) {
+			   },if((result$thedata[row,]$apr_count) == 0) {
 			     HTML("<br>")
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote April",
@@ -472,7 +472,7 @@ dtedit <- function(input, output, name, thedata,
 			                                                                   label = "Approx. Transit Time (Days): ", value = 0)),
 			                              HTML("<br>"),
 			                              "Please include all Assessorials in total Quoted cost.")
-			   },if(is.na(result$thedata[row,]$may_count)) {
+			   },if((result$thedata[row,]$may_count) == 0) {
 			     HTML("<br>")
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote May",
@@ -489,7 +489,7 @@ dtedit <- function(input, output, name, thedata,
 			                                                                   label = "Approx. Transit Time (Days): ", value = 0)),
 			                              HTML("<br>"),
 			                              "Please include all Assessorials in total Quoted cost.")
-			   },if(is.na(result$thedata[row,]$jun_count)) {
+			   },if((result$thedata[row,]$jun_count) == 0) {
 			     HTML("<br>")
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote June",
@@ -506,7 +506,7 @@ dtedit <- function(input, output, name, thedata,
 			                                                                   label = "Approx. Transit Time (Days): ", value = 0)),
 			                              HTML("<br>"),
 			                              "Please include all Assessorials in total Quoted cost.")
-			   },if(is.na(result$thedata[row,]$jul_count)) {
+			   },if((result$thedata[row,]$jul_count) == 0) {
 			     HTML("<br>")
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote July",
@@ -523,7 +523,7 @@ dtedit <- function(input, output, name, thedata,
 			                                                                   label = "Approx. Transit Time (Days): ", value = 0)),
 			                              HTML("<br>"),
 			                              "Please include all Assessorials in total Quoted cost.")
-			   },if(is.na(result$thedata[row,]$aug_count)) {
+			   },if((result$thedata[row,]$aug_count) == 0) {
 			     HTML("<br>")
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote August",
@@ -540,7 +540,7 @@ dtedit <- function(input, output, name, thedata,
 			                                                                   label = "Approx. Transit Time (Days): ", value = 0)),
 			                              HTML("<br>"),
 			                              "Please include all Assessorials in total Quoted cost.")
-			   },if(is.na(result$thedata[row,]$sep_count)) {
+			   },if((result$thedata[row,]$sep_count) == 0) {
 			     HTML("<br>")
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote September",
@@ -557,7 +557,7 @@ dtedit <- function(input, output, name, thedata,
 			                                                                   label = "Approx. Transit Time (Days): ", value = 0)),
 			                              HTML("<br>"),
 			                              "Please include all Assessorials in total Quoted cost.")
-			   },if(is.na(result$thedata[row,]$oct_count)) {
+			   },if((result$thedata[row,]$oct_count) == 0) {
 			     HTML("<br>")
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote October",
@@ -574,7 +574,7 @@ dtedit <- function(input, output, name, thedata,
 			                                                                   label = "Approx. Transit Time (Days): ", value = 0)),
 			                              HTML("<br>"),
 			                              "Please include all Assessorials in total Quoted cost.")
-			   },if(is.na(result$thedata[row,]$nov_count)) {
+			   },if((result$thedata[row,]$nov_count) == 0) {
 			     HTML("<br>")
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote November",
@@ -591,7 +591,7 @@ dtedit <- function(input, output, name, thedata,
 			                                                                   label = "Approx. Transit Time (Days): ", value = 0)),
 			                              HTML("<br>"),
 			                              "Please include all Assessorials in total Quoted cost.")
-			   }, if(is.na(result$thedata[row,]$dec_count)) {
+			   }, if((result$thedata[row,]$dec_count) == 0) {
 			     HTML("<br>")
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote December",
