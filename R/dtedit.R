@@ -390,19 +390,225 @@ dtedit <- function(input, output, name, thedata,
 
 	editModal <- function(row) {
 		output[[paste0(name, '_message')]] <- renderText('')
-		fields <- getFields('_edit_', values=result$thedata[row,])
+		# fields <- getFields('_edit_', values=result$thedata[row,])
 		shiny::modalDialog(title = title.edit,
-		                   HTML("<p style='text-align:left;'>"),
-		                   strong("Lane: "), result$thedata[row,]$lane,
-		                   HTML("<span style='float:center;'>"), strong("Mode: "), result$thedata[row,]$mode,
+		                   HTML("<font size = '+1.4'><p style='text-align:left;'>"),
+		                   strong("Lane: "), result$thedata[row,]$'lane code',
+		                   HTML("<span style='float:right;'>"), strong("Mode: "), result$thedata[row,]$mode,
 		                   HTML("</span></p>"),
-		                   strong("From: "), ship_from,
+		                   strong("Ship From: "), result$thedata[row,]$ship_from,
 		                   HTML("<br>"),
-		                   strong("To: "), result$thedata[row,]$address,
+		                   strong("Ship To: "), result$thedata[row,]$ship_to,
+		                   HTML("</font><br><br>"),
 			shiny::div(shiny::textOutput(paste0(name, '_message')), style='color:red'),
-			shinyBS::bsCollapsePanel('_edit_', "January Estimate", "Estimated Shipment Count and Average weight(kg)",
-			                          shinyAddOns::inumericInput(inputId = "result$thedata[row,]$jan_est", label = "January Estimate: ",
-			                                                     value = 0),server = T),
+			shiny::div(tags$head(tags$style(type="text/css", "#inline label{ display: table-cell;
+			                           text-align: center; vertical-align: middle; }
+                                  #inline .form-group { display: table-row;}"))),
+			if(is.na(result$thedata[row,]$jan_count)) {
+			  HTML("<br>")
+			  } else {
+			  shinyBS::bsCollapsePanel("Quote January",
+			                         HTML("<font size='+.8'>"),
+			                         strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$jan_count), HTML("</u>"),
+			                         HTML("<br>"),
+			                         strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$jan_avg_kg),
+			                         strong("Kg's"),
+			                         HTML("</u>"),
+			                         HTML("</font>"),
+			                         tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$jan_est",
+			                                                              label = "Quoted Cost per Shipment: $", value = 0.00)),
+			                         tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$jan_tra",
+			                                                              label = "Approx. Transit Time (Days): ", value = 0)),
+			                         HTML("<br>"),
+			                         "Please include all Assessorials in total Quoted cost.")
+			   }, if(is.na(result$thedata[row,]$feb_count)) {
+			     HTML("<br>")
+			   } else {
+			     shinyBS::bsCollapsePanel("Quote February",
+			                              HTML("<font size='+.8'>"),
+			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$feb_count), HTML("</u>"),
+			                              HTML("<br>"),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$feb_avg_kg),
+			                              strong("Kg's"),
+			                              HTML("</u>"),
+			                              HTML("</font>"),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$feb_est",
+			                                                                   label = "Quoted Cost per Shipment: $", value = 0.00)),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$feb_tra",
+			                                                                   label = "Approx. Transit Time (Days): ", value = 0)),
+			                              HTML("<br>"),
+			                              "Please include all Assessorials in total Quoted cost.")
+			   },if(is.na(result$thedata[row,]$mar_count)) {
+			     HTML("<br>")
+			   } else {
+			     shinyBS::bsCollapsePanel("Quote March",
+			                              HTML("<font size='+.8'>"),
+			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$mar_count), HTML("</u>"),
+			                              HTML("<br>"),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$mar_avg_kg),
+			                              strong("Kg's"),
+			                              HTML("</u>"),
+			                              HTML("</font>"),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$mar_est",
+			                                                                   label = "Quoted Cost per Shipment: $", value = 0.00)),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$mar_tra",
+			                                                                   label = "Approx. Transit Time (Days): ", value = 0)),
+			                              HTML("<br>"),
+			                              "Please include all Assessorials in total Quoted cost.")
+			   },if(is.na(result$thedata[row,]$apr_count)) {
+			     HTML("<br>")
+			   } else {
+			     shinyBS::bsCollapsePanel("Quote April",
+			                              HTML("<font size='+.8'>"),
+			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$apr_count), HTML("</u>"),
+			                              HTML("<br>"),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$apr_avg_kg),
+			                              strong("Kg's"),
+			                              HTML("</u>"),
+			                              HTML("</font>"),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$apr_est",
+			                                                                   label = "Quoted Cost per Shipment: $", value = 0.00)),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$apr_tra",
+			                                                                   label = "Approx. Transit Time (Days): ", value = 0)),
+			                              HTML("<br>"),
+			                              "Please include all Assessorials in total Quoted cost.")
+			   },if(is.na(result$thedata[row,]$may_count)) {
+			     HTML("<br>")
+			   } else {
+			     shinyBS::bsCollapsePanel("Quote May",
+			                              HTML("<font size='+.8'>"),
+			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$may_count), HTML("</u>"),
+			                              HTML("<br>"),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$may_avg_kg),
+			                              strong("Kg's"),
+			                              HTML("</u>"),
+			                              HTML("</font>"),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$may_est",
+			                                                                   label = "Quoted Cost per Shipment: $", value = 0.00)),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$may_tra",
+			                                                                   label = "Approx. Transit Time (Days): ", value = 0)),
+			                              HTML("<br>"),
+			                              "Please include all Assessorials in total Quoted cost.")
+			   },if(is.na(result$thedata[row,]$jun_count)) {
+			     HTML("<br>")
+			   } else {
+			     shinyBS::bsCollapsePanel("Quote June",
+			                              HTML("<font size='+.8'>"),
+			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$jun_count), HTML("</u>"),
+			                              HTML("<br>"),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$jun_avg_kg),
+			                              strong("Kg's"),
+			                              HTML("</u>"),
+			                              HTML("</font>"),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$jun_est",
+			                                                                   label = "Quoted Cost per Shipment: $", value = 0.00)),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$jun_tra",
+			                                                                   label = "Approx. Transit Time (Days): ", value = 0)),
+			                              HTML("<br>"),
+			                              "Please include all Assessorials in total Quoted cost.")
+			   },if(is.na(result$thedata[row,]$jul_count)) {
+			     HTML("<br>")
+			   } else {
+			     shinyBS::bsCollapsePanel("Quote July",
+			                              HTML("<font size='+.8'>"),
+			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$jul_count), HTML("</u>"),
+			                              HTML("<br>"),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$jul_avg_kg),
+			                              strong("Kg's"),
+			                              HTML("</u>"),
+			                              HTML("</font>"),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$jul_est",
+			                                                                   label = "Quoted Cost per Shipment: $", value = 0.00)),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$jul_tra",
+			                                                                   label = "Approx. Transit Time (Days): ", value = 0)),
+			                              HTML("<br>"),
+			                              "Please include all Assessorials in total Quoted cost.")
+			   },if(is.na(result$thedata[row,]$aug_count)) {
+			     HTML("<br>")
+			   } else {
+			     shinyBS::bsCollapsePanel("Quote August",
+			                              HTML("<font size='+.8'>"),
+			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$aug_count), HTML("</u>"),
+			                              HTML("<br>"),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$aug_avg_kg),
+			                              strong("Kg's"),
+			                              HTML("</u>"),
+			                              HTML("</font>"),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$aug_est",
+			                                                                   label = "Quoted Cost per Shipment: $", value = 0.00)),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$aug_tra",
+			                                                                   label = "Approx. Transit Time (Days): ", value = 0)),
+			                              HTML("<br>"),
+			                              "Please include all Assessorials in total Quoted cost.")
+			   },if(is.na(result$thedata[row,]$sep_count)) {
+			     HTML("<br>")
+			   } else {
+			     shinyBS::bsCollapsePanel("Quote September",
+			                              HTML("<font size='+.8'>"),
+			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$sep_count), HTML("</u>"),
+			                              HTML("<br>"),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$sep_avg_kg),
+			                              strong("Kg's"),
+			                              HTML("</u>"),
+			                              HTML("</font>"),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$sep_est",
+			                                                                   label = "Quoted Cost per Shipment: $", value = 0.00)),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$sep_tra",
+			                                                                   label = "Approx. Transit Time (Days): ", value = 0)),
+			                              HTML("<br>"),
+			                              "Please include all Assessorials in total Quoted cost.")
+			   },if(is.na(result$thedata[row,]$oct_count)) {
+			     HTML("<br>")
+			   } else {
+			     shinyBS::bsCollapsePanel("Quote October",
+			                              HTML("<font size='+.8'>"),
+			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$oct_count), HTML("</u>"),
+			                              HTML("<br>"),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$oct_avg_kg),
+			                              strong("Kg's"),
+			                              HTML("</u>"),
+			                              HTML("</font>"),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$oct_est",
+			                                                                   label = "Quoted Cost per Shipment: $", value = 0.00)),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$oct_tra",
+			                                                                   label = "Approx. Transit Time (Days): ", value = 0)),
+			                              HTML("<br>"),
+			                              "Please include all Assessorials in total Quoted cost.")
+			   },if(is.na(result$thedata[row,]$nov_count)) {
+			     HTML("<br>")
+			   } else {
+			     shinyBS::bsCollapsePanel("Quote November",
+			                              HTML("<font size='+.8'>"),
+			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$nov_count), HTML("</u>"),
+			                              HTML("<br>"),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$nov_avg_kg),
+			                              strong("Kg's"),
+			                              HTML("</u>"),
+			                              HTML("</font>"),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$nov_est",
+			                                                                   label = "Quoted Cost per Shipment: $", value = 0.00)),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$nov_tra",
+			                                                                   label = "Approx. Transit Time (Days): ", value = 0)),
+			                              HTML("<br>"),
+			                              "Please include all Assessorials in total Quoted cost.")
+			   }, if(is.na(result$thedata[row,]$dec_count)) {
+			     HTML("<br>")
+			   } else {
+			     shinyBS::bsCollapsePanel("Quote December",
+			                              HTML("<font size='+.8'>"),
+			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$dec_count), HTML("</u>"),
+			                              HTML("<br>"),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$dec_avg_kg),
+			                              strong("Kg's"),
+			                              HTML("</u>"),
+			                              HTML("</font>"),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$dec_est",
+			                                                                   label = "Quoted Cost per Shipment: $", value = 0.00)),
+			                              tags$div(id = "inline", numericInput(inputId = "result$thedata[row,]$dec_tra",
+			                                                                   label = "Approx. Transit Time (Days): ", value = 0)),
+			                              HTML("<br>"),
+			                              "Please include all Assessorials in total Quoted cost.")
+			   },
 			footer = column(shiny::modalButton('Cancel'),
 							shiny::actionButton(paste0(name, '_update'), 'Submit'),
 							width=12),
