@@ -81,8 +81,7 @@
 #' @param datatable.options options passed to \code{\link{DT::renderDataTable}}.
 #'        See \link{https://rstudio.github.io/DT/options.html} for more information.
 #' @export
-dtedit <- function(input, output, name, thedata,
-                   ship_from,
+dtedit <- function(input, output, name, thedata, thedata2,
 				   view.cols = names(thedata),
 				   edit.cols = names(thedata),
 				   edit.label.cols = edit.cols,
@@ -106,7 +105,7 @@ dtedit <- function(input, output, name, thedata,
 				   label.copy = 'Copy',
 				   show.delete = F,
 				   show.update = TRUE,
-				   show.insert = T,
+				   show.insert = F,
 				   show.copy = F,
 				   callback.delete = function(data, row) { },
 				   callback.update = function(data, olddata, row) { },
@@ -390,28 +389,29 @@ dtedit <- function(input, output, name, thedata,
 
 	editModal <- function(row) {
 		output[[paste0(name, '_message')]] <- renderText('')
-		# fields <- getFields('_edit_', values=result$thedata[row,])
+		fields <- getFields('_edit_', values=result$thedata[row,])
+		fields
 		shiny::modalDialog(title = title.edit,
 		                   HTML("<font size = '+1.4'><p style='text-align:left;'>"),
-		                   strong("Lane: "), result$thedata[row,]$'lane code',
-		                   HTML("<span style='float:right;'>"), strong("Mode: "), result$thedata[row,]$mode,
+		                   strong("Lane: "), result$thedata[row,]$'Lane',
+		                   HTML("<span style='float:right;'>"), strong("Mode: "), result$thedata[row,]$Mode,
 		                   HTML("</span></p>"),
-		                   strong("Ship From: "), result$thedata[row,]$ship_from,
+		                   strong("Ship From: "), result$thedata[row,]$`Ship From`,
 		                   HTML("<br>"),
-		                   strong("Ship To: "), result$thedata[row,]$ship_to,
+		                   strong("Ship To: "), result$thedata[row,]$`Ship To`,
 		                   HTML("</font><br><br>"),
 			shiny::div(shiny::textOutput(paste0(name, '_message')), style='color:red'),
 			shiny::div(tags$head(tags$style(type="text/css", "#inline label{ display: table-cell;
 			                           text-align: center; vertical-align: middle; }
                                   #inline .form-group { display: table-row;}"))),
 			if((result$thedata[row,]$jan_count) == 0) {
-			  HTML("<br>")
+			  NULL
 			  } else {
 			  shinyBS::bsCollapsePanel("Quote January",
 			                         HTML("<font size='+.8'>"),
 			                         strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$jan_count), HTML("</u>"),
 			                         HTML("<br>"),
-			                         strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$jan_avg_kg),
+			                         strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$jan_avg_kg,2)),
 			                         strong("Kg's"),
 			                         HTML("</u>"),
 			                         HTML("</font>"),
@@ -423,13 +423,13 @@ dtedit <- function(input, output, name, thedata,
 			                         "Please include all Assessorials in total Quoted cost.")
 			   },
 			   if((result$thedata[row,]$feb_count) == 0) {
-			     HTML("<br>")
+			     NULL
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote February",
 			                              HTML("<font size='+.8'>"),
 			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$feb_count), HTML("</u>"),
 			                              HTML("<br>"),
-			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$feb_avg_kg),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$feb_avg_kg,2)),
 			                              strong("Kg's"),
 			                              HTML("</u>"),
 			                              HTML("</font>"),
@@ -440,13 +440,13 @@ dtedit <- function(input, output, name, thedata,
 			                              HTML("<br>"),
 			                              "Please include all Assessorials in total Quoted cost.")
 			   },if((result$thedata[row,]$mar_count == 0)) {
-			     HTML("<br>")
+			     NULL
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote March",
 			                              HTML("<font size='+.8'>"),
 			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$mar_count), HTML("</u>"),
 			                              HTML("<br>"),
-			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$mar_avg_kg),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$mar_avg_kg,2)),
 			                              strong("Kg's"),
 			                              HTML("</u>"),
 			                              HTML("</font>"),
@@ -457,13 +457,13 @@ dtedit <- function(input, output, name, thedata,
 			                              HTML("<br>"),
 			                              "Please include all Assessorials in total Quoted cost.")
 			   },if((result$thedata[row,]$apr_count) == 0) {
-			     HTML("<br>")
+			     NULL
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote April",
 			                              HTML("<font size='+.8'>"),
 			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$apr_count), HTML("</u>"),
 			                              HTML("<br>"),
-			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$apr_avg_kg),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$apr_avg_kg,2)),
 			                              strong("Kg's"),
 			                              HTML("</u>"),
 			                              HTML("</font>"),
@@ -474,13 +474,13 @@ dtedit <- function(input, output, name, thedata,
 			                              HTML("<br>"),
 			                              "Please include all Assessorials in total Quoted cost.")
 			   },if((result$thedata[row,]$may_count) == 0) {
-			     HTML("<br>")
+			     NULL
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote May",
 			                              HTML("<font size='+.8'>"),
 			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$may_count), HTML("</u>"),
 			                              HTML("<br>"),
-			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$may_avg_kg),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$may_avg_kg,2)),
 			                              strong("Kg's"),
 			                              HTML("</u>"),
 			                              HTML("</font>"),
@@ -491,13 +491,13 @@ dtedit <- function(input, output, name, thedata,
 			                              HTML("<br>"),
 			                              "Please include all Assessorials in total Quoted cost.")
 			   },if((result$thedata[row,]$jun_count) == 0) {
-			     HTML("<br>")
+			     NULL
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote June",
 			                              HTML("<font size='+.8'>"),
 			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$jun_count), HTML("</u>"),
 			                              HTML("<br>"),
-			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$jun_avg_kg),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$jun_avg_kg,2)),
 			                              strong("Kg's"),
 			                              HTML("</u>"),
 			                              HTML("</font>"),
@@ -508,13 +508,13 @@ dtedit <- function(input, output, name, thedata,
 			                              HTML("<br>"),
 			                              "Please include all Assessorials in total Quoted cost.")
 			   },if((result$thedata[row,]$jul_count) == 0) {
-			     HTML("<br>")
+			     NULL
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote July",
 			                              HTML("<font size='+.8'>"),
 			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$jul_count), HTML("</u>"),
 			                              HTML("<br>"),
-			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$jul_avg_kg),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$jul_avg_kg,2)),
 			                              strong("Kg's"),
 			                              HTML("</u>"),
 			                              HTML("</font>"),
@@ -525,13 +525,13 @@ dtedit <- function(input, output, name, thedata,
 			                              HTML("<br>"),
 			                              "Please include all Assessorials in total Quoted cost.")
 			   },if((result$thedata[row,]$aug_count) == 0) {
-			     HTML("<br>")
+			     NULL
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote August",
 			                              HTML("<font size='+.8'>"),
 			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$aug_count), HTML("</u>"),
 			                              HTML("<br>"),
-			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$aug_avg_kg),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$aug_avg_kg,2)),
 			                              strong("Kg's"),
 			                              HTML("</u>"),
 			                              HTML("</font>"),
@@ -542,13 +542,13 @@ dtedit <- function(input, output, name, thedata,
 			                              HTML("<br>"),
 			                              "Please include all Assessorials in total Quoted cost.")
 			   },if((result$thedata[row,]$sep_count) == 0) {
-			     HTML("<br>")
+			     NULL
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote September",
 			                              HTML("<font size='+.8'>"),
 			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$sep_count), HTML("</u>"),
 			                              HTML("<br>"),
-			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$sep_avg_kg),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$sep_avg_kg,2)),
 			                              strong("Kg's"),
 			                              HTML("</u>"),
 			                              HTML("</font>"),
@@ -559,13 +559,13 @@ dtedit <- function(input, output, name, thedata,
 			                              HTML("<br>"),
 			                              "Please include all Assessorials in total Quoted cost.")
 			   },if((result$thedata[row,]$oct_count) == 0) {
-			     HTML("<br>")
+			     NULL
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote October",
 			                              HTML("<font size='+.8'>"),
 			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$oct_count), HTML("</u>"),
 			                              HTML("<br>"),
-			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$oct_avg_kg),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$oct_avg_kg,2)),
 			                              strong("Kg's"),
 			                              HTML("</u>"),
 			                              HTML("</font>"),
@@ -576,13 +576,13 @@ dtedit <- function(input, output, name, thedata,
 			                              HTML("<br>"),
 			                              "Please include all Assessorials in total Quoted cost.")
 			   },if((result$thedata[row,]$nov_count) == 0) {
-			     HTML("<br>")
+			     NULL
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote November",
 			                              HTML("<font size='+.8'>"),
 			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$nov_count), HTML("</u>"),
 			                              HTML("<br>"),
-			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$nov_avg_kg),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$nov_avg_kg,2)),
 			                              strong("Kg's"),
 			                              HTML("</u>"),
 			                              HTML("</font>"),
@@ -593,13 +593,13 @@ dtedit <- function(input, output, name, thedata,
 			                              HTML("<br>"),
 			                              "Please include all Assessorials in total Quoted cost.")
 			   }, if((result$thedata[row,]$dec_count) == 0) {
-			     HTML("<br>")
+			     NULL
 			   } else {
 			     shinyBS::bsCollapsePanel("Quote December",
 			                              HTML("<font size='+.8'>"),
 			                              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$dec_count), HTML("</u>"),
 			                              HTML("<br>"),
-			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(result$thedata[row,]$dec_avg_kg),
+			                              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$dec_avg_kg,2)),
 			                              strong("Kg's"),
 			                              HTML("</u>"),
 			                              HTML("</font>"),
