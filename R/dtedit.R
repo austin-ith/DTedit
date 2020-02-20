@@ -87,6 +87,7 @@ dtedit <- function(input, output, name, thedata, user_name, ship_2, data_type,
 				   edit.label.cols = edit.cols,
 				   input.types,
 				   ship_to,
+				   show = T,
 				   input.choices = NULL,
 				   selectize = TRUE,
 				   modal.size = 'm',
@@ -104,9 +105,9 @@ dtedit <- function(input, output, name, thedata, user_name, ship_2, data_type,
 				   label.edit = 'Quote Lane',
 				   label.add = 'Edit Quote',
 				   label.copy = 'Copy',
-				   show.delete = T,
+				   show.delete = F,
 				   show.update = TRUE,
-				   show.insert = T,
+				   show.insert = F,
 				   callback.delete = function(data, row) { },
 				   callback.update = function(data, olddata, row) { },
 				   callback.insert = function(data, row) { },
@@ -186,7 +187,7 @@ dtedit <- function(input, output, name, thedata, user_name, ship_2, data_type,
 	  filter(user %in% user_name)
 
 	  thedata <-  thedata %>%
-	  filter(`Lane Code` %in% setdiff(`Lane Code`, submission$`Lane.Code`))
+	  filter(`Lane Code` %in% setdiff(`Lane Code`, submission$`Lane Code`))
 
 	  result$thedata <- thedata
 
@@ -198,17 +199,23 @@ dtedit <- function(input, output, name, thedata, user_name, ship_2, data_type,
 	  submission <- dbGetQuery(cn, "SELECT * FROM submission;")
 	  submission <- submission %>%
 	    filter(user %in% user_name,
-	           grepl(data_type, Lane.Code))
+	           grepl(data_type, `Lane Code`))
 
 	  table2 <-  thedata %>%
-	    filter(`Lane Code` %in% intersect(`Lane Code`, submission$`Lane.Code`))
+	    filter(`Lane Code` %in% intersect(`Lane Code`, submission$`Lane Code`))
 
-	  table2_join <- left_join(submission, table2, by = c('Lane.Code' = 'Lane Code')) %>%
-	    select('Lane.Code', 'Ship From', ship_2, "Total Shipments/Year","Avg.(Kg)/Shipment", "quote", "est_transit") %>%
+	  table2_join <- left_join(submission, table2, by = c('Lane Code' = 'Lane Code')) %>%
+	    select('Lane Code', 'Ship From', ship_2, "Total Shipments/Year","Avg.(Kg)/Shipment", "quote", "est_transit") %>%
 	    filter(!is.na(`Ship From`))
 
+	  names(table2_join)[names(table2_join) == "est_transit"] <- "Est. Transit(days)"
+	  names(table2_join)[names(table2_join) == "quote"] <- "Quote Amount"
+	  names(table2_join)[names(table2_join) == "Lane Code"] <- "Lane Code"
+	  table2_join[,6] <- sapply(table2_join[,6], function(x) paste0("  $",round(x,2)))
+
 	  table2_join
-	}, options = datatable.options, server=TRUE, selection='single', rownames=FALSE)
+	}, options = list(
+	  columnDefs = list(list(className = 'dt-right', targets = 5))), server=TRUE, selection='single', rownames=FALSE)
 
 
 	output[[paste0(name, '_message')]] <- shiny::renderText('')
@@ -312,27 +319,36 @@ dtedit <- function(input, output, name, thedata, user_name, ship_2, data_type,
 
 		if(!is.null(row)) {
 			if(row > 0) {
-				newdata <- data.frame(`Lane Code` = result$thedata[row,]$`Lane Code`, quote = input$quote,
-				                      est_transit = input$est_transit, user = user_name, date_time = Sys.time())
+				newdata <- data.frame(`Lane Code` = result$thedata[row,]$`Lane Code`,
+				                      peak_season = input$peak_season,
+				                      PSquote = input$quote1, quote = input$quote2,
+				                      PStransit = input$est_transit1,
+				                      transit = input$est_transit2, notes = input$notes,
+				                      user = user_name, date_time = Sys.time())
 				dplyr::db_insert_into(cn, table = "submission", values = newdata)
 				submission <- DBI::dbGetQuery(cn, "SELECT * FROM submission;")
 				submission_filter <- submission %>%
 				  filter(user %in% user_name)
 
 				newdata1 <- thedata %>%
-				  filter(`Lane Code` %in% setdiff(`Lane Code`, submission_filter$`Lane.Code`))
+				  filter(`Lane Code` %in% setdiff(`Lane Code`, submission_filter$`Lane Code`))
 
 				submission <- dbGetQuery(cn, "SELECT * FROM submission;")
 				submission <- submission %>%
 				  filter(user %in% user_name,
-				         grepl(data_type, Lane.Code))
+				         grepl(data_type, `Lane Code`))
 
 				table2 <-  thedata %>%
-				  filter(`Lane Code` %in% intersect(`Lane Code`, submission$`Lane.Code`))
+				  filter(`Lane Code` %in% intersect(`Lane Code`, submission$`Lane Code`))
 
-				table2_join <- left_join(submission, table2, by = c('Lane.Code' = 'Lane Code')) %>%
-				  select('Lane.Code', 'Ship From', ship_2, "Total Shipments/Year","Avg.(Kg)/Shipment", "quote", "est_transit") %>%
+				table2_join <- left_join(submission, table2, by = c('Lane Code' = 'Lane Code')) %>%
+				  select('Lane Code', 'Ship From', ship_2, "Total Shipments/Year","Avg.(Kg)/Shipment", "quote", "est_transit") %>%
 				  filter(!is.na(`Ship From`))
+
+				names(table2_join)[names(table2_join) == "est_transit"] <- "Est. Transit(days)"
+				names(table2_join)[names(table2_join) == "quote"] <- "Quote Amount"
+				names(table2_join)[names(table2_join) == "Lane Code"] <- "Lane Code"
+				table2_join[,6] <- sapply(table2_join[,6], function(x) paste0("  $",round(x,2)))
 
 				table2_join
 
@@ -417,12 +433,21 @@ year_avg <-  result$thedata[row,] %>%
                      HTML("<br>"),
                      strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(year_avg$year_avg,2)),
                      strong("Kg's"), HTML("</u>"), HTML("</font>"),
-                     HTML("<br>"), HTML("<br>"),
-			               tags$div(id = "inline", numericInput(inputId = 'quote',
-			                                                             label = "*Quoted Cost per Shipment: $  ", value = 0.00)),
-			               tags$div(id = "inline", numericInput(inputId = 'est_transit',
-			                                                             label = "Approx. Transit Time (Days): ", value = 0)), HTML("<br>"),
-			              "*Please include all Assessorials in total Quoted cost."
+                     HTML("<hr>"),
+			               tags$div(id = "inline", checkboxGroupInput(inputId = 'peak_season',
+			                                     label = "Define Peak Season(s): ", choices = c("1st Quarter","2nd Quarter","3rd Quarter","4th Quarter")), multiple = T, width = '800px'),
+			              HTML("<u>"), strong("Peak Season Quote:"), HTML("</u>"),
+			              tags$div(id = "inline", numericInput(inputId = 'quote1',
+			                                                             label = "*Cost per Shipment: $  ", value = 0.00), step=".01"),
+			               tags$div(id = "inline", numericInput(inputId = 'est_transit1',
+			                                                             label = "Approx. Transit Time(Days): ", value = 0)),
+			              HTML("<br><u>"),strong("Non-Peak Season Quote:"),HTML("</u>"),
+              		  tags$div(id = "inline", numericInput(inputId = 'quote2',
+              			                                     label = "*Cost per Shipment: $  ", value = 0.00), step=".01"),
+              			tags$div(id = "inline", numericInput(inputId = 'est_transit2',
+              			                                     label = "Approx. Transit Time(Days): ", value = 0)), HTML("<br>"),
+			              textAreaInput("notes", label = "Additional Notes:", width = textarea.width, height = textarea.height),
+			              "*Please include all Assessorials in total quoted cost."
 			   ,
 			footer = column(shiny::modalButton('Cancel'),
 							shiny::actionButton(paste0(name, '_update'), 'Submit'),
@@ -483,11 +508,20 @@ year_avg <-  result$thedata[row,] %>%
 		shiny::div(
 		  HTML("<u>"), h4("Lanes to Quote"), HTML("</u>"),
 			if(show.update) { shiny::actionButton(paste0(name, '_edit'), label.edit) },
-			shiny::br(), shiny::br(), DT::dataTableOutput(DataTableName), HTML("<hr>"),
-			HTML("<u>"), h4("Submitted Lane Quotes"), HTML("</u>"),
 			if(show.insert) { shiny::actionButton(paste0(name, '_add'), label.add) },
 			if(show.delete) { shiny::actionButton(paste0(name, '_remove'), label.delete) },
-			shiny::br(), shiny::br(), DT::dataTableOutput(Data_2)
+			shiny::br(), shiny::br(), DT::dataTableOutput(DataTableName), HTML("<hr>"), hr(),
+			if (show == T) {
+			  div(HTML("<u>"),
+			  h4("Submitted Quotes"),
+			  HTML("</u>"),
+			  h5("**See 'Submitted Quotes' Tab above to edit or delete submitted quotes"),
+  			DT::dataTableOutput(Data_2))
+			  } else {
+			    NULL
+			    },
+			shiny::br(), shiny::br(),
+			shiny::br(), shiny::br()
 		)
 	})
 
