@@ -81,7 +81,7 @@
 #' @param datatable.options options passed to \code{\link{DT::renderDataTable}}.
 #'        See \link{https://rstudio.github.io/DT/options.html} for more information.
 #' @export
-dtedit <- function(input, output, name, thedata, user_name,
+dtedit <- function(input, output, name, thedata, user_name, ship_2, data_type,
 				   view.cols = names(thedata),
 				   edit.cols = names(thedata),
 				   edit.label.cols = edit.cols,
@@ -100,14 +100,13 @@ dtedit <- function(input, output, name, thedata, user_name,
 				   title.delete = 'Delete',
 				   title.edit = 'Quote Lane',
 				   title.add = 'New',
-				   label.delete = 'Delete',
+				   label.delete = 'Delete Quote',
 				   label.edit = 'Quote Lane',
-				   label.add = 'New',
+				   label.add = 'Edit Quote',
 				   label.copy = 'Copy',
-				   show.delete = F,
+				   show.delete = T,
 				   show.update = TRUE,
-				   show.insert = F,
-				   show.copy = F,
+				   show.insert = T,
 				   callback.delete = function(data, row) { },
 				   callback.update = function(data, olddata, row) { },
 				   callback.insert = function(data, row) { },
@@ -130,9 +129,12 @@ dtedit <- function(input, output, name, thedata, user_name,
 	}
 
 	DataTableName <- paste0(name, 'dt')
-	DataTableName2 <- paste0(name, 'dt')
 
 	dt.proxy <- DT::dataTableProxy(DataTableName)
+
+	Data_2 <- paste0(name, 'dt2')
+
+	dt.proxy2 <- DT::dataTableProxy(Data_2)
 
 
 	selectInputMultiple <- function(...) {
@@ -186,81 +188,28 @@ dtedit <- function(input, output, name, thedata, user_name,
 	  thedata <-  thedata %>%
 	  filter(`Lane Code` %in% setdiff(`Lane Code`, submission$`Lane.Code`))
 
+	  result$thedata <- thedata
+
 	  thedata[,view.cols]
 	}, options = datatable.options, server=TRUE, selection='single', rownames=FALSE)
 
-	getFields <- function(typeName, values) {
-		fields <- list()
-		for(i in seq_along(edit.cols)) {
-			if(inputTypes[i] == 'dateInput') {
-				value <- ifelse(missing(values),
-								as.character(Sys.Date()),
-								as.character(values[,edit.cols[i]]))
-				fields[[i]] <- dateInput(paste0(name, typeName, edit.cols[i]),
-										 label=edit.label.cols[i],
-										 value=value,
-										 width=date.width)
-			} else if(inputTypes[i] == 'selectInputMultiple') {
-				value <- ifelse(missing(values), '', values[,edit.cols[i]])
-				if(is.list(value)) {
-					value <- value[[1]]
-				}
-				choices <- ''
-				if(!missing(values)) {
-					choices <- unique(unlist(values[,edit.cols[i]]))
-				}
-				if(!is.null(input.choices)) {
-					if(edit.cols[i] %in% names(input.choices)) {
-						choices <- input.choices[[edit.cols[i]]]
-					}
-				}
-				if(length(choices) == 1 & choices == '') {
-					warning(paste0('No choices available for ', edit.cols[i],
-								   '. Specify them using the input.choices parameter'))
-				}
-				fields[[i]] <- selectInputMultiple(paste0(name, typeName, edit.cols[i]),
-										   label=edit.label.cols[i],
-										   choices=choices,
-										   selected=value,
-										   width=select.width)
 
-			} else if(inputTypes[i] == 'selectInput') {
-				value <- ifelse(missing(values), '', as.character(values[,edit.cols[i]]))
-				fields[[i]] <- shiny::selectInput(paste0(name, typeName, edit.cols[i]),
-										   label=edit.label.cols[i],
-										   choices=levels(result$thedata[,edit.cols[i]]),
-										   selected=value,
-										   width=select.width)
-			} else if(inputTypes[i] == 'numericInput') {
-				value <- ifelse(missing(values), 0, values[,edit.cols[i]])
-				fields[[i]] <- shiny::numericInput(paste0(name, typeName, edit.cols[i]),
-											label=edit.label.cols[i],
-											value=value,
-											width=numeric.width)
-			} else if(inputTypes[i] == 'textAreaInput') {
-				value <- ifelse(missing(values), '', values[,edit.cols[i]])
-				fields[[i]] <- shiny::textAreaInput(paste0(name, typeName, edit.cols[i]),
-											 label=edit.label.cols[i],
-											 value=value,
-											 width=textarea.width, height=textarea.height)
-			} else if(inputTypes[i] == 'textInput') {
-				value <- ifelse(missing(values), '', values[,edit.cols[i]])
-				fields[[i]] <- shiny::textInput(paste0(name, typeName, edit.cols[i]),
-										 label=edit.label.cols[i],
-										 value=value,
-										 width=text.width)
-			} else if(inputTypes[i] == 'passwordInput') {
-				value <- ifelse(missing(values), '', values[,edit.cols[i]])
-				fields[[i]] <- shiny::passwordInput(paste0(name, typeName, edit.cols[i]),
-										 label=edit.label.cols[i],
-										 value=value,
-										 width=text.width)
-			} else {
-				stop('Invalid input type!')
-			}
-		}
-		return(fields)
-	}
+	output[[Data_2]] <- DT::renderDataTable({
+	  submission <- dbGetQuery(cn, "SELECT * FROM submission;")
+	  submission <- submission %>%
+	    filter(user %in% user_name,
+	           grepl(data_type, Lane.Code))
+
+	  table2 <-  thedata %>%
+	    filter(`Lane Code` %in% intersect(`Lane Code`, submission$`Lane.Code`))
+
+	  table2_join <- left_join(submission, table2, by = c('Lane.Code' = 'Lane Code')) %>%
+	    select('Lane.Code', 'Ship From', ship_2, "Total Shipments/Year","Avg.(Kg)/Shipment", "quote", "est_transit") %>%
+	    filter(!is.na(`Ship From`))
+
+	  table2_join
+	}, options = datatable.options, server=TRUE, selection='single', rownames=FALSE)
+
 
 	output[[paste0(name, '_message')]] <- shiny::renderText('')
 
@@ -277,7 +226,7 @@ dtedit <- function(input, output, name, thedata, user_name,
 	##### Insert functions #####################################################
 
 	observeEvent(input[[paste0(name, '_add')]], {
-		if(!is.null(row)) {
+		if(!is.null(therow)) {
 			shiny::showModal(addModal())
 		}
 	})
@@ -335,17 +284,6 @@ dtedit <- function(input, output, name, thedata, user_name,
 		)
 	}
 
-	##### Copy functions #######################################################
-
-	observeEvent(input[[paste0(name, '_copy')]], {
-		row <- input[[paste0(name, 'dt_rows_selected')]]
-		if(!is.null(row)) {
-			if(row > 0) {
-				shiny::showModal(addModal(values=result$thedata[row,]))
-			}
-		}
-	})
-
 
 	##### Update functions #####################################################
 
@@ -383,6 +321,21 @@ dtedit <- function(input, output, name, thedata, user_name,
 
 				newdata1 <- thedata %>%
 				  filter(`Lane Code` %in% setdiff(`Lane Code`, submission_filter$`Lane.Code`))
+
+				submission <- dbGetQuery(cn, "SELECT * FROM submission;")
+				submission <- submission %>%
+				  filter(user %in% user_name,
+				         grepl(data_type, Lane.Code))
+
+				table2 <-  thedata %>%
+				  filter(`Lane Code` %in% intersect(`Lane Code`, submission$`Lane.Code`))
+
+				table2_join <- left_join(submission, table2, by = c('Lane.Code' = 'Lane Code')) %>%
+				  select('Lane.Code', 'Ship From', ship_2, "Total Shipments/Year","Avg.(Kg)/Shipment", "quote", "est_transit") %>%
+				  filter(!is.na(`Ship From`))
+
+				table2_join
+
 				}
 				tryCatch({
 					callback.data <- callback.update(data = newdata1, row = row)
@@ -391,6 +344,9 @@ dtedit <- function(input, output, name, thedata, user_name,
 					} else {
 						result$thedata <- newdata1
 					}
+					updateData(dt.proxy2,
+					           table2_join,
+					           rownames = FALSE)
 					updateData(dt.proxy,
 								result$thedata[,view.cols],
 								rownames = FALSE)
@@ -525,11 +481,13 @@ year_avg <-  result$thedata[row,] %>%
 
 	output[[name]] <- shiny::renderUI({
 		shiny::div(
-			if(show.insert) { shiny::actionButton(paste0(name, '_add'), label.add) },
+		  HTML("<u>"), h4("Lanes to Quote"), HTML("</u>"),
 			if(show.update) { shiny::actionButton(paste0(name, '_edit'), label.edit) },
+			shiny::br(), shiny::br(), DT::dataTableOutput(DataTableName), HTML("<hr>"),
+			HTML("<u>"), h4("Submitted Lane Quotes"), HTML("</u>"),
+			if(show.insert) { shiny::actionButton(paste0(name, '_add'), label.add) },
 			if(show.delete) { shiny::actionButton(paste0(name, '_remove'), label.delete) },
-			if(show.copy) { shiny::actionButton(paste0(name, '_copy'), label.copy) },
-			shiny::br(), shiny::br(), DT::dataTableOutput(DataTableName)
+			shiny::br(), shiny::br(), DT::dataTableOutput(Data_2)
 		)
 	})
 
