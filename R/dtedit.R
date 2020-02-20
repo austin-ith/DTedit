@@ -81,7 +81,7 @@
 #' @param datatable.options options passed to \code{\link{DT::renderDataTable}}.
 #'        See \link{https://rstudio.github.io/DT/options.html} for more information.
 #' @export
-dtedit <- function(input, output, name, thedata, thedata2,
+dtedit <- function(input, output, name, thedata, user_name,
 				   view.cols = names(thedata),
 				   edit.cols = names(thedata),
 				   edit.label.cols = edit.cols,
@@ -113,7 +113,11 @@ dtedit <- function(input, output, name, thedata, thedata2,
 				   callback.insert = function(data, row) { },
 				   click.time.threshold = 2, # in seconds
 				   datatable.options = list(pageLength=defaultPageLength)
-) {
+)
+
+
+{
+
 	# Some basic parameter checking
 	if(!is.data.frame(thedata) | ncol(thedata) < 1) {
 		stop('Must provide a data frame with at least one column.')
@@ -126,17 +130,20 @@ dtedit <- function(input, output, name, thedata, thedata2,
 	}
 
 	DataTableName <- paste0(name, 'dt')
+	DataTableName2 <- paste0(name, 'dt')
+
+	dt.proxy <- DT::dataTableProxy(DataTableName)
+
+
+	selectInputMultiple <- function(...) {
+		shiny::selectInput(multiple = TRUE, selectize = selectize, ...)
+	}
 
 	result <- shiny::reactiveValues()
 	result$thedata <- thedata
 	result$view.cols <- view.cols
 	result$edit.cols <- edit.cols
 
-	dt.proxy <- DT::dataTableProxy(DataTableName)
-
-	selectInputMultiple <- function(...) {
-		shiny::selectInput(multiple = TRUE, selectize = selectize, ...)
-	}
 
 	valid.input.types <- c('dateInput', 'selectInput', 'numericInput',
 						   'textInput', 'textAreaInput', 'passwordInput', 'selectInputMultiple')
@@ -170,7 +177,15 @@ dtedit <- function(input, output, name, thedata, thedata2,
 		}
 	}
 
+
 	output[[DataTableName]] <- DT::renderDataTable({
+	  submission <- dbGetQuery(cn, "SELECT * FROM submission;")
+	  submission <- submission %>%
+	  filter(user %in% user_name)
+
+	  thedata <-  thedata %>%
+	  filter(`Lane Code` %in% setdiff(`Lane Code`, submission$`Lane.Code`))
+
 	  thedata[,view.cols]
 	}, options = datatable.options, server=TRUE, selection='single', rownames=FALSE)
 
@@ -359,22 +374,22 @@ dtedit <- function(input, output, name, thedata, thedata2,
 
 		if(!is.null(row)) {
 			if(row > 0) {
-				newdata <- result$thedata
-				for(i in edit.cols) {
-				  print(i)
-				  print(input[[paste0(name, '_edit_', i)]])
+				newdata <- data.frame(`Lane Code` = result$thedata[row,]$`Lane Code`, quote = input$quote,
+				                      est_transit = input$est_transit, user = user_name, date_time = Sys.time())
+				dplyr::db_insert_into(cn, table = "submission", values = newdata)
+				submission <- DBI::dbGetQuery(cn, "SELECT * FROM submission;")
+				submission_filter <- submission %>%
+				  filter(user %in% user_name)
 
-						#newdata[row,i] <- input[[paste0(name, '_edit_', i)]]
-
+				newdata1 <- thedata %>%
+				  filter(`Lane Code` %in% setdiff(`Lane Code`, submission_filter$`Lane.Code`))
 				}
 				tryCatch({
-					callback.data <- callback.update(data = newdata,
-													 olddata = result$thedata,
-													 row = row)
+					callback.data <- callback.update(data = newdata1, row = row)
 					if(!is.null(callback.data) & is.data.frame(callback.data)) {
 						result$thedata <- callback.data
 					} else {
-						result$thedata <- newdata
+						result$thedata <- newdata1
 					}
 					updateData(dt.proxy,
 								result$thedata[,view.cols],
@@ -385,15 +400,47 @@ dtedit <- function(input, output, name, thedata, thedata2,
 					output[[paste0(name, '_message')]] <<- shiny::renderText(geterrmessage())
 					return(FALSE)
 				})
-			}
 		}
 		return(FALSE)
 	})
 
 	editModal <- function(row) {
 		output[[paste0(name, '_message')]] <- renderText('')
-		fields <- getFields('_edit_', values=result$thedata[row,])
-		fields
+		#fields <- getFields('_edit_', values=result$thedata[row,])
+
+
+		###### Month Display Table ######
+		display_table <- result$thedata[row,]
+		display_table <- display_table %>%
+		  select(jan_count, jan_avg_kg,feb_count, feb_avg_kg,mar_count, mar_avg_kg,apr_count, apr_avg_kg,may_count, may_avg_kg,jun_count, jun_avg_kg,jul_count, jul_avg_kg,aug_count, aug_avg_kg,sep_count, sep_avg_kg,oct_count, oct_avg_kg,nov_count, nov_avg_kg,dec_count, dec_avg_kg) %>%
+		  gather() %>%
+		  mutate(Month = case_when(grepl("jan", key) ~ "January",grepl("feb", key) ~ "February",grepl("mar", key) ~ "March",grepl("apr", key) ~ "April",grepl("may", key) ~ "May",grepl("jun", key) ~ "June",grepl("jul", key) ~ "July",grepl("aug", key) ~ "August",grepl("sep", key) ~ "September",grepl("oct", key) ~ "October",grepl("nov", key) ~ "November",grepl("dec", key) ~ "December")) %>%
+		  mutate(Month = fct_relevel(Month, c("January",
+		                                      "February","March","April",
+		                                      "May","June","July","August","September",
+		                                      "October","November","December"))) %>%
+		  filter(!is.na(value)) %>%
+		  group_by(key, Month) %>%
+		  summarize(value = value)
+
+		  display_table <- spread(display_table, key, value)
+
+		  display_table1 <- display_table %>%
+		  replace(is.na(.), 0) %>%
+		  mutate("Total Shipments" = round(as.numeric(rowSums(.[grep("count", names(.))])), digits = 0),
+		         "Avg.(Kg)/Shipment" = round(rowSums(.[grep("avg", names(.))])/rowSums(.[grep("count", names(.))])),2) %>%
+		  select(Month, "Total Shipments", "Avg.(Kg)/Shipment") %>%
+		  filter(!is.na("Avg.(Kg)/Shipment"), "Total Shipments" != 0)
+
+
+		  ###### Average Weight per shipment/Year ######
+
+year_avg <-  result$thedata[row,] %>%
+		    mutate(year_avg = round(rowSums(.[grep("total", names(.))])/rowSums(.[grep("count", names(.))]),2),
+		           year_count = as.numeric(rowSums(.[grep("count", names(.))])))
+
+      ####### Back to the Modal Dialog
+
 		shiny::modalDialog(title = title.edit,
 		                   HTML("<font size = '+1.4'><p style='text-align:left;'>"),
 		                   strong("Lane: "), result$thedata[row,]$'Lane',
@@ -407,132 +454,19 @@ dtedit <- function(input, output, name, thedata, thedata2,
 			shiny::div(tags$head(tags$style(type="text/css", "#inline label{ display: table-cell;
 			                           text-align: center; vertical-align: middle; }
                                   #inline .form-group { display: table-row;}"))),
-			  shinyBS::bsCollapsePanel("Shipment Information by Month", if((result$thedata[row,]$jan_count) == 0) {
-			    NULL
-			  } else {
-			    fluidPage(HTML("<u><font size='+1.8'>"),strong("January"),HTML("</u></font><br>"),
-			                   HTML("<font size='+.8'>"),
-			                   strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$jan_count), HTML("</u>"),
-			                   HTML("<br>"),
-			                   strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$jan_avg_kg,2)),
-			                   strong("Kg's"), HTML("</u>"), HTML("</font>"),
-			                   HTML("<br>"))
-			  },if((result$thedata[row,]$feb_count) == 0) {
-			    NULL
-			  } else {
-			    fluidPage(HTML("<u><font size='+1.8'>"),strong("Febuary"),HTML("</u></font><br>"),
-			              HTML("<font size='+.8'>"),
-			              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$feb_count), HTML("</u>"),
-			              HTML("<br>"),
-			              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$feb_avg_kg,2)),
-			              strong("Kg's"), HTML("</u>"), HTML("</font>"),
-			              HTML("<br>"))
-			  },if((result$thedata[row,]$mar_count) == 0) {
-			    NULL
-			  } else {
-			    fluidPage(HTML("<u><font size='+1.8'>"),strong("March"),HTML("</u></font><br>"),
-			              HTML("<font size='+.8'>"),
-			              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$mar_count), HTML("</u>"),
-			              HTML("<br>"),
-			              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$mar_avg_kg,2)),
-			              strong("Kg's"), HTML("</u>"), HTML("</font>"),
-			              HTML("<br>"))
-			  },if((result$thedata[row,]$apr_count) == 0) {
-			    NULL
-			  } else {
-			    fluidPage(HTML("<u><font size='+1.8'>"),strong("April"),HTML("</u></font><br>"),
-			              HTML("<font size='+.8'>"),
-			              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$apr_count), HTML("</u>"),
-			              HTML("<br>"),
-			              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$apr_avg_kg,2)),
-			              strong("Kg's"), HTML("</u>"), HTML("</font>"),
-			              HTML("<br>"))
-			  },if((result$thedata[row,]$may_count) == 0) {
-			    NULL
-			  } else {
-			    fluidPage(HTML("<u><font size='+1.8'>"),strong("May"),HTML("</u></font><br>"),
-			              HTML("<font size='+.8'>"),
-			              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$may_count), HTML("</u>"),
-			              HTML("<br>"),
-			              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$may_avg_kg,2)),
-			              strong("Kg's"), HTML("</u>"), HTML("</font>"),
-			              HTML("<br>"))
-			  },if((result$thedata[row,]$jun_count) == 0) {
-			    NULL
-			  } else {
-			    fluidPage(HTML("<u><font size='+1.8'>"),strong("June"),HTML("</u></font><br>"),
-			              HTML("<font size='+.8'>"),
-			              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$jun_count), HTML("</u>"),
-			              HTML("<br>"),
-			              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$jun_avg_kg,2)),
-			              strong("Kg's"), HTML("</u>"), HTML("</font>"),
-			              HTML("<br>"))
-			  },if((result$thedata[row,]$jul_count) == 0) {
-			    NULL
-			  } else {
-			    fluidPage(HTML("<u><font size='+1.8'>"),strong("July"),HTML("</u></font><br>"),
-			              HTML("<font size='+.8'>"),
-			              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$jul_count), HTML("</u>"),
-			              HTML("<br>"),
-			              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$jul_avg_kg,2)),
-			              strong("Kg's"), HTML("</u>"), HTML("</font>"),
-			              HTML("<br>"))
-			  },if((result$thedata[row,]$aug_count) == 0) {
-			    NULL
-			  } else {
-			    fluidPage(HTML("<u><font size='+1.8'>"),strong("August"),HTML("</u></font><br>"),
-			              HTML("<font size='+.8'>"),
-			              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$aug_count), HTML("</u>"),
-			              HTML("<br>"),
-			              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$aug_avg_kg,2)),
-			              strong("Kg's"), HTML("</u>"), HTML("</font>"),
-			              HTML("<br>"))
-			  },if((result$thedata[row,]$sep_count) == 0) {
-			    NULL
-			  } else {
-			    fluidPage(HTML("<u><font size='+1.8'>"),strong("September"),HTML("</u></font><br>"),
-			              HTML("<font size='+.8'>"),
-			              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$sep_count), HTML("</u>"),
-			              HTML("<br>"),
-			              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$sep_avg_kg,2)),
-			              strong("Kg's"), HTML("</u>"), HTML("</font>"),
-			              HTML("<br>"))
-			  },if((result$thedata[row,]$oct_count) == 0) {
-			    NULL
-			  } else {
-			    fluidPage(HTML("<u><font size='+1.8'>"),strong("October"),HTML("</u></font><br>"),
-			              HTML("<font size='+.8'>"),
-			              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$oct_count), HTML("</u>"),
-			              HTML("<br>"),
-			              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$oct_avg_kg,2)),
-			              strong("Kg's"), HTML("</u>"), HTML("</font>"),
-			              HTML("<br>"))
-			  },if((result$thedata[row,]$nov_count) == 0) {
-			    NULL
-			  } else {
-			    fluidPage(HTML("<u><font size='+1.8'>"),strong("November"),HTML("</u></font><br>"),
-			              HTML("<font size='+.8'>"),
-			              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$nov_count), HTML("</u>"),
-			              HTML("<br>"),
-			              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$nov_avg_kg,2)),
-			              strong("Kg's"), HTML("</u>"), HTML("</font>"),
-			              HTML("<br>"))
-			  },if((result$thedata[row,]$dec_count) == 0) {
-			    NULL
-			  } else {
-			    fluidPage(HTML("<u><font size='+1.8'>"),strong("December"),HTML("</u></font><br>"),
-			              HTML("<font size='+.8'>"),
-			              strong("Number of shipments: "), HTML("<u>"), strong(result$thedata[row,]$dec_count), HTML("</u>"),
-			              HTML("<br>"),
-			              strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(result$thedata[row,]$dec_avg_kg,2)),
-			              strong("Kg's"), HTML("</u>"), HTML("</font>"),
-			              HTML("<br>"))
-			  }),
-			               tags$div(id = "inline", numericInput(inputId = paste0(name,"_edit_jan_est"),
-			                                                             label = "Quoted Cost per Shipment: $", value = 0.00)),
-			               tags$div(id = "inline", numericInput(inputId = paste0(name,"_edit_jan_tra"),
-			                                                             label = "Approx. Transit Time (Days): ", value = 0)),
-			              "Please include all Assessorials in total Quoted cost."
+			  shinyBS::bsCollapsePanel("Historical Shipment Information by Month", HTML("<center>"),renderTable(display_table1, digits = 0, na = 0)), HTML("</center>"),
+                     HTML("<u><font size='+1.8'>"),strong("Please Quote from 2019 Figures below:"),HTML("</u></font><br>"),
+                     HTML("<font size='+.8'>"), HTML("<br>"),
+                     strong("Number of shipments: "), HTML("<u>"), strong(year_avg$year_count), HTML("</u>"),
+                     HTML("<br>"),
+                     strong("Average Weight Per shipment: "), HTML("<u>"), strong(round(year_avg$year_avg,2)),
+                     strong("Kg's"), HTML("</u>"), HTML("</font>"),
+                     HTML("<br>"), HTML("<br>"),
+			               tags$div(id = "inline", numericInput(inputId = 'quote',
+			                                                             label = "*Quoted Cost per Shipment: $  ", value = 0.00)),
+			               tags$div(id = "inline", numericInput(inputId = 'est_transit',
+			                                                             label = "Approx. Transit Time (Days): ", value = 0)), HTML("<br>"),
+			              "*Please include all Assessorials in total Quoted cost."
 			   ,
 			footer = column(shiny::modalButton('Cancel'),
 							shiny::actionButton(paste0(name, '_update'), 'Submit'),
@@ -598,6 +532,7 @@ dtedit <- function(input, output, name, thedata, thedata2,
 			shiny::br(), shiny::br(), DT::dataTableOutput(DataTableName)
 		)
 	})
+
 
 	return(result)
 }
