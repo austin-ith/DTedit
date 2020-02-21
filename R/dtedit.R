@@ -85,6 +85,7 @@ dtedit <- function(input, output, name, thedata, user_name, ship_2, data_type,
 				   view.cols = names(thedata),
 				   edit.cols = names(thedata),
 				   edit.label.cols = edit.cols,
+				   table_2 = F,
 				   input.types,
 				   ship_to,
 				   show = T,
@@ -182,16 +183,32 @@ dtedit <- function(input, output, name, thedata, user_name, ship_2, data_type,
 
 
 	output[[DataTableName]] <- DT::renderDataTable({
-	  submission <- dbGetQuery(cn, "SELECT * FROM submission;")
+	  if(table_2 == F) {submission <- dbGetQuery(cn, "SELECT * FROM submission;")
 	  submission <- submission %>%
 	  filter(user %in% user_name)
 
 	  thedata <-  thedata %>%
-	  filter(`Lane Code` %in% setdiff(`Lane Code`, submission$`Lane Code`))
+	  filter(`Lane Code` %in% setdiff(`Lane Code`, submission$`Lane.Code`))
 
 	  result$thedata <- thedata
 
-	  thedata[,view.cols]
+	  thedata[,view.cols]}
+	  else {
+	    thedata <- left_join(thedata, rbind(dbGetQuery(cn, "SELECT * FROM inbound;"),dbGetQuery(cn, "SELECT * FROM outbound;"),dbGetQuery(cn, "SELECT * FROM drop_ship;")), by = c("Lane.Code" = "Lane Code"))
+
+    thedata <- thedata %>%
+      filter(user %in% user_name) %>%
+      select(Lane.Code, `Ship From`,`Ship To`, Psquote, Pstransit, quote, transit, user)
+
+    names(thedata)[names(thedata) == "quote"] <- "Quote Amount"
+    names(thedata)[names(thedata) == "transit"] <- "Est. Transit(days)"
+    names(thedata)[names(thedata) == "Pstransit"] <- "Peak Season Est. Transit(days)"
+    names(thedata)[names(thedata) == "Psquote"] <- "Peak Season Quote Amount"
+    names(thedata)[names(thedata) == "Lane.Code"] <- "Lane Code"
+    thedata[,4] <- sapply(thedata[,4], function(x) paste0("  $",round(x,2)))
+    thedata[,6] <- sapply(thedata[,6], function(x) paste0("  $",round(x,2)))
+	    thedata
+	  }
 	}, options = datatable.options, server=TRUE, selection='single', rownames=FALSE)
 
 
@@ -199,23 +216,27 @@ dtedit <- function(input, output, name, thedata, user_name, ship_2, data_type,
 	  submission <- dbGetQuery(cn, "SELECT * FROM submission;")
 	  submission <- submission %>%
 	    filter(user %in% user_name,
-	           grepl(data_type, `Lane Code`))
+	           grepl(data_type, `Lane.Code`))
 
 	  table2 <-  thedata %>%
-	    filter(`Lane Code` %in% intersect(`Lane Code`, submission$`Lane Code`))
+	    filter(`Lane Code` %in% intersect(`Lane Code`, submission$`Lane.Code`))
 
-	  table2_join <- left_join(submission, table2, by = c('Lane Code' = 'Lane Code')) %>%
-	    select('Lane Code', 'Ship From', ship_2, "Total Shipments/Year","Avg.(Kg)/Shipment", "quote", "est_transit") %>%
+	  table2_join <- left_join(submission, table2, by = c('Lane.Code' = 'Lane Code')) %>%
+	    select('Lane.Code', 'Ship From', ship_2, "Total Shipments/Year","Avg.(Kg)/Shipment", 'Psquote', 'Pstransit', 'quote', 'transit') %>%
 	    filter(!is.na(`Ship From`))
 
-	  names(table2_join)[names(table2_join) == "est_transit"] <- "Est. Transit(days)"
+	  names(table2_join)[names(table2_join) == "Total Shipments/Year"] <- "Shipments/ Year"
 	  names(table2_join)[names(table2_join) == "quote"] <- "Quote Amount"
-	  names(table2_join)[names(table2_join) == "Lane Code"] <- "Lane Code"
+	  names(table2_join)[names(table2_join) == "transit"] <- "Est. Transit(days)"
+	  names(table2_join)[names(table2_join) == "Pstransit"] <- "Peak Season Est. Transit(days)"
+	  names(table2_join)[names(table2_join) == "Psquote"] <- "Peak Season Quote Amount"
+	  names(table2_join)[names(table2_join) == "Lane.Code"] <- "Lane Code"
 	  table2_join[,6] <- sapply(table2_join[,6], function(x) paste0("  $",round(x,2)))
+	  table2_join[,8] <- sapply(table2_join[,8], function(x) paste0("  $",round(x,2)))
 
 	  table2_join
 	}, options = list(
-	  columnDefs = list(list(className = 'dt-right', targets = 5))), server=TRUE, selection='single', rownames=FALSE)
+	  columnDefs = list(list(className = 'dt-right', targets = c(5,7)))), server=TRUE, selection='single', rownames=FALSE)
 
 
 	output[[paste0(name, '_message')]] <- shiny::renderText('')
@@ -319,39 +340,47 @@ dtedit <- function(input, output, name, thedata, user_name, ship_2, data_type,
 
 		if(!is.null(row)) {
 			if(row > 0) {
-				newdata <- data.frame(`Lane Code` = result$thedata[row,]$`Lane Code`,
-				                      peak_season = input$peak_season,
-				                      PSquote = input$quote1, quote = input$quote2,
-				                      PStransit = input$est_transit1,
-				                      transit = input$est_transit2, notes = input$notes,
-				                      user = user_name, date_time = Sys.time())
+			  peak_season <- toString(input$peak_season)
+			  newdata <- data.frame(Lane.Code = result$thedata[row,]$'Lane Code',
+				                      peak_season= peak_season,
+				                      Psquote = input$quote1,
+				                      quote = input$quote2,
+				                      Pstransit = input$est_transit1,
+				                      transit = input$est_transit2,
+				                      notes = input$notes,
+				                      user = user_name,
+				                      date_time = Sys.time())
 				dplyr::db_insert_into(cn, table = "submission", values = newdata)
 				submission <- DBI::dbGetQuery(cn, "SELECT * FROM submission;")
 				submission_filter <- submission %>%
 				  filter(user %in% user_name)
 
 				newdata1 <- thedata %>%
-				  filter(`Lane Code` %in% setdiff(`Lane Code`, submission_filter$`Lane Code`))
+				  filter(`Lane Code` %in% setdiff(`Lane Code`, submission_filter$`Lane.Code`))
 
 				submission <- dbGetQuery(cn, "SELECT * FROM submission;")
 				submission <- submission %>%
 				  filter(user %in% user_name,
-				         grepl(data_type, `Lane Code`))
+				         grepl(data_type, Lane.Code))
 
 				table2 <-  thedata %>%
-				  filter(`Lane Code` %in% intersect(`Lane Code`, submission$`Lane Code`))
+				  filter(`Lane Code` %in% intersect(`Lane Code`, submission$`Lane.Code`))
 
-				table2_join <- left_join(submission, table2, by = c('Lane Code' = 'Lane Code')) %>%
-				  select('Lane Code', 'Ship From', ship_2, "Total Shipments/Year","Avg.(Kg)/Shipment", "quote", "est_transit") %>%
+				table2_join <- left_join(submission, table2, by = c('Lane.Code' = 'Lane Code')) %>%
+				  select('Lane.Code', 'Ship From', ship_2, "Total Shipments/Year","Avg.(Kg)/Shipment", 'Psquote', 'Pstransit', 'quote', 'transit') %>%
 				  filter(!is.na(`Ship From`))
 
-				names(table2_join)[names(table2_join) == "est_transit"] <- "Est. Transit(days)"
+				names(table2_join)[names(table2_join) == "Total Shipments/Year"] <- "Shipments/ Year"
 				names(table2_join)[names(table2_join) == "quote"] <- "Quote Amount"
-				names(table2_join)[names(table2_join) == "Lane Code"] <- "Lane Code"
+				names(table2_join)[names(table2_join) == "transit"] <- "Est. Transit(days)"
+				names(table2_join)[names(table2_join) == "Pstransit"] <- "Peak Season Est. Transit(days)"
+				names(table2_join)[names(table2_join) == "Psquote"] <- "Peak Season Quote Amount"
+				names(table2_join)[names(table2_join) == "Lane.Code"] <- "Lane Code"
 				table2_join[,6] <- sapply(table2_join[,6], function(x) paste0("  $",round(x,2)))
+				table2_join[,8] <- sapply(table2_join[,8], function(x) paste0("  $",round(x,2)))
 
 				table2_join
-
+				update_all <- reactiveVal(2)
 				}
 				tryCatch({
 					callback.data <- callback.update(data = newdata1, row = row)
@@ -446,7 +475,7 @@ year_avg <-  result$thedata[row,] %>%
               			                                     label = "*Cost per Shipment: $  ", value = 0.00), step=".01"),
               			tags$div(id = "inline", numericInput(inputId = 'est_transit2',
               			                                     label = "Approx. Transit Time(Days): ", value = 0)), HTML("<br>"),
-			              textAreaInput("notes", label = "Additional Notes:", width = textarea.width, height = textarea.height),
+			              textAreaInput(inputId = "notes", label = "Additional Notes:", width = textarea.width, height = textarea.height),
 			              "*Please include all Assessorials in total quoted cost."
 			   ,
 			footer = column(shiny::modalButton('Cancel'),
@@ -506,7 +535,9 @@ year_avg <-  result$thedata[row,] %>%
 
 	output[[name]] <- shiny::renderUI({
 		shiny::div(
-		  HTML("<u>"), h4("Lanes to Quote"), HTML("</u>"),
+		  if (show == T) {div(HTML("<u>"), h4("Lanes to Quote"), HTML("</u>"))} else {
+		   NULL
+		  },
 			if(show.update) { shiny::actionButton(paste0(name, '_edit'), label.edit) },
 			if(show.insert) { shiny::actionButton(paste0(name, '_add'), label.add) },
 			if(show.delete) { shiny::actionButton(paste0(name, '_remove'), label.delete) },
